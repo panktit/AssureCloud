@@ -7,7 +7,6 @@ from Crypto import Random
 import Crypto.Cipher.AES as AES
 from Crypto.Util import Counter
 from Crypto.Random import get_random_bytes
-from Crypto.PublicKey import RSA
 
 # this is used to create a counter.
 # We have padded data in bytes.
@@ -61,10 +60,10 @@ def authenticate():
 
   # Have the user sign in and authorize this token
   authorize_url = flow.start()
-  print '1. Go to: \n' + authorize_url
+  print '1. Go to: ' + authorize_url
   print '2. Click "Allow" (you might have to log in first)'
-  print '3. Copy the authorization code.'
-  code = raw_input("Enter the authorization code here: ").strip()
+  print '3. Copy the authorization code'
+  code = raw_input("\nEnter the authorization code here: ").strip()
 
   # This will fail if the user enters an invalid authorization code
   try:
@@ -183,9 +182,9 @@ def share_file(user):
 
 
 # START
-print "\n\n* * * * * * * * * * * * * * * * * * * * * * * * * * * * \n"
-print "Privacy Enhanced Cloud Storage Admitting De-duplication\n\n" 
-print "* * * * * * * * * * * * * * * * * * * * * * * * * * * * \n"
+print "\n\n* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *\n"
+print "AssureCloud : Secure data storage and privacy protection for Dropbox clients\n\n" 
+print "* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *\n"
 
 print "Can you please authenticate yourself? \n";
 access_token, client = authenticate()
@@ -200,7 +199,7 @@ while(1):
   featureChoice=int (input("Enter your choice here : "))
   
   if featureChoice == 1:
-    print "\n \n U P L O A D  F I L E   F E A T U R E \n"
+    print "\n \n UPLOAD FILE FEATURE \n"
     file_name = raw_input("Enter file name: ")
     key_file_name = "encryptedkey_"+file_name
     print "File encryption in progress . . . "
@@ -213,7 +212,7 @@ while(1):
     access_token = upload_files(ciphertext,encryptedSecretKey, access_token, client, username)
   
   elif featureChoice == 2:
-    print "\n \n D O W N L O A D  F I L E   F E A T U R E \n"
+    print "\n \n DOWNLOAD FILE FEATURE \n"
     # Location of the file downloaded on local machine
     download_file_path = "../downloads/local"
     createDirStructure(download_file_path)
@@ -228,22 +227,22 @@ while(1):
     print "Download successfully complete!"
 
   elif featureChoice == 3:
-    print "\n \n S H A R E   F I L E   F E A T U R E \n"
+    print "\n \n SHARE FILE FEATURE \n"
     file_name = raw_input("Enter file name: ")
     key_file_name = "encryptedkey_"+file_name
     person = raw_input("Enter the name of person to share file with: ")
     generate_RSA_Key_Pair(person)
     print "Hi, I am "+username+"!"
     print "I am re-sealing this key with "+person+"'s public key"
-    encryptedSecretKeyForBob = share_file(person)
+    encryptedSecretKeyForSharing = share_file(person)
 
-    # Assume user is notified ciphertext and encryptedSecretKeyForBob
+    # Assume user is notified ciphertext and encryptedSecretKeyForSharing
     print "\n Let us assume: "+username+" notifies "+person+" with key and cipher text! \n"
     download_file_path = "../downloads/shared/"+person
     createDirStructure(download_file_path)
 
     print "Done! Let me share this cryptic file and key with "+person+"\n\n"
-    access_token = upload_files(ciphertext, encryptedSecretKeyForBob, access_token, client, person)
+    access_token = upload_files(ciphertext, encryptedSecretKeyForSharing, access_token, client, person)
 
     print "Hi, I am "+person+"!"
     print "Oh I received something from "+username+"!";
