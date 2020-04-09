@@ -73,21 +73,7 @@ def authenticate():
     return
 
   dbx = dropbox.Dropbox(oauth_result.access_token)
-  # access_token = flow.finish(code)
-  # client = dropbox.Dropbox(access_token)
   return oauth_result.access_token, dbx
-
-def readFile():
-  #fileName = "working-draft.txt
-  with open(local_filePath + file_name) as in_file:
-    content =  in_file.readlines()
-  
-  stringContent = ''.join(content)
-
-  # Always length should be 32 so no need of padding
-  # Encrypt this key with public key and store it on the cloud   
-  secretKey = SHA256.new(stringContent).digest()
-  return stringContent, secretKey
 
 def generate_RSA_Key_Pair(user):
   # RSA will be used to create pair of public key and pvt key.
@@ -100,7 +86,18 @@ def generate_RSA_Key_Pair(user):
 
   f = open(key_file_path+'/'+user+'_public_rsa_key.pem','w')
   f.write(keys.publickey().exportKey('PEM'))
-  f.close()	
+  f.close() 
+
+def readFile():
+  with open(local_filePath + file_name) as in_file:
+    content =  in_file.readlines()
+  
+  stringContent = ''.join(content)
+
+  # Always length should be 32 so no need of padding
+  # Encrypt this key with public key and store it on the cloud   
+  secretKey = SHA256.new(stringContent).digest()
+  return stringContent, secretKey
 
 def getEncryptedSecretKey(secretKey, name):
   f = open(key_file_path+'/'+name+'_public_rsa_key.pem','r')
@@ -109,18 +106,17 @@ def getEncryptedSecretKey(secretKey, name):
   return encryptedSecretKey
 
 def encrypt():
-  stringContent, secretKey = readFile();
-  paddedContent   = pad(stringContent)
+  stringContent, secretKey = readFile()
+  paddedContent = pad(stringContent)
   # Note that - In counter mode no iv, but they use nonce + counter check wiki diagram
   # nonce is 8 bytes , and counter of 64 bytes, and create 64 * 8 = 512 bytes 
   # 512 bytes is the block size of AES blocks
   ctr = Counter.new(64,nonce)
   aes = AES.new(secretKey, AES.MODE_CTR,counter=ctr)
   ciphertext = aes.encrypt(paddedContent)
-  #print "Encypted Content = " + ciphertext
   
   # Here used iv to randomize the data to greater extend.
-  iv = Random.new().read(AES.block_size);
+  iv = Random.new().read(AES.block_size)
   return  iv+ciphertext, secretKey
 
 def decrypt(ciphertext, secretKey):
@@ -150,17 +146,19 @@ def upload_files(ciphertext, encryptedSecretKey, access_token, client,user):
 
 def download_file(access_token, user):
   client = dropbox.Dropbox(access_token)
-  #folder_metadata = client.metadata('/')
-  #print 'metadata: ', folder_metadata
   
+  # dropbox encrypted secretKey
   metadata, f1 = client.files_download("/keys/" + user + "/" + key_file_name)
+
+  # locally stored RSA private key
   f2 = open(key_file_path+'/'+user+'_pvt_rsa_key.pem','r')
   pvtkey = RSA.importKey(f2.read())
-  decrypted = pvtkey.decrypt(f1.content)
- 
+  decryptedKey = pvtkey.decrypt(f1.content)
+  
+  # file from dropbox data folder 
   metadata, f = client.files_download("/data/"+ file_name)
   out = open(download_file_path + "/" + file_name, 'wb')
-  out.write(decrypt(f.content, decrypted))
+  out.write(decrypt(f.content, decryptedKey))
   out.close()
 
 def share_file(user):
@@ -186,7 +184,7 @@ print "\n\n* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 print "AssureCloud : Secure data storage and privacy protection for Dropbox clients\n\n" 
 print "* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *\n"
 
-print "Can you please authenticate yourself? \n";
+print "Can you please authenticate yourself? \n"
 access_token, client = authenticate()
 username = client.users_get_current_account().name.given_name
 print "Authentication successful! \n "
@@ -223,7 +221,7 @@ while(1):
     # Read its contents
     # Decrypt that secret key using the pvtkey from rsa
     # Use the secret key from decryption process to decrypt content from the data file
-    download_file(access_token, username);
+    download_file(access_token, username)
     print "Download successfully complete!"
 
   elif featureChoice == 3:
@@ -236,16 +234,16 @@ while(1):
     print "I am re-sealing this key with "+person+"'s public key"
     encryptedSecretKeyForSharing = share_file(person)
 
+    print "Done! Let me share this cryptic file and key with "+person+"\n\n"
+    access_token = upload_files(ciphertext, encryptedSecretKeyForSharing, access_token, client, person)
+
     # Assume user is notified ciphertext and encryptedSecretKeyForSharing
     print "\n Let us assume: "+username+" notifies "+person+" with key and cipher text! \n"
     download_file_path = "../downloads/shared/"+person
     createDirStructure(download_file_path)
 
-    print "Done! Let me share this cryptic file and key with "+person+"\n\n"
-    access_token = upload_files(ciphertext, encryptedSecretKeyForSharing, access_token, client, person)
-
     print "Hi, I am "+person+"!"
-    print "Oh I received something from "+username+"!";
+    print "Oh I received something from "+username+"!"
     print " Downloading the file - " + file_name + " \n Download location - " + download_file_path
     download_file(access_token, person)
     print "Download successfully complete!  Lets check!"
