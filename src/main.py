@@ -51,11 +51,9 @@ def unpad(content):
   return content.rstrip(b'\0')
 
 def authenticate():
-  # TO DO : Enter your app key and App secret.
   app_key = 'x03ls4fvmfws3v5'
   app_secret = 'w7hn9l5b960f1k0'
   
-  # Get your app key and secret from the Dropbox developer website
   flow = dropbox.DropboxOAuth2FlowNoRedirect(app_key, app_secret)
 
   # Have the user sign in and authorize this token
@@ -86,7 +84,7 @@ def generate_RSA_Key_Pair(user):
 
   f = open(key_file_path+'/'+user+'_public_rsa_key.pem','w')
   f.write(keys.publickey().exportKey('PEM'))
-  f.close() 
+  f.close()
 
 def readFile():
   with open(local_filePath + file_name) as in_file:
@@ -133,7 +131,6 @@ def decrypt(ciphertext, secretKey):
 def upload_files(ciphertext, encryptedSecretKey, access_token, client,user):
 
   try:
-    #deduplication part => overwrite = True
     response = client.files_upload(ciphertext, "/data/"+file_name, mode=dropbox.files.WriteMode('overwrite', None))
     stringEncryptedKey = " ".join(encryptedSecretKey)
     responseFromKey = client.files_upload(stringEncryptedKey, "/keys/" + user + "/"+ key_file_name, mode=dropbox.files.WriteMode('overwrite', None))
